@@ -1,7 +1,8 @@
 {% comment %}
   Hero Cinematic Intro — SplashySound
   Premium 15-second animated hero banner for Shopify homepage.
-  Sequence: RGB glow → macro product → water drops → shower slow-mo → studio rotation → CTA
+  Product: circular black rubber waterproof shower speaker with full-spectrum RGB ring.
+  Sequence: RGB glow → macro product zoom → water drops (RGB-reflected) → shower slow-mo → orbital → studio → CTA
 {% endcomment %}
 
 <section
@@ -11,44 +12,84 @@
   data-logo="{{ section.settings.store_logo | img_url: '400x' }}"
 >
   <!-- Canvas layers -->
-  <canvas id="hero-bg-canvas" class="hero-canvas hero-canvas--bg" aria-hidden="true"></canvas>
+  <canvas id="hero-bg-canvas"    class="hero-canvas hero-canvas--bg"    aria-hidden="true"></canvas>
+  <canvas id="hero-fx-canvas"    class="hero-canvas hero-canvas--fx"    aria-hidden="true"></canvas>
   <canvas id="hero-water-canvas" class="hero-canvas hero-canvas--water" aria-hidden="true"></canvas>
+
+  <!-- Tile wall background -->
+  <div class="hero-tile-bg" id="hero-tile-bg" aria-hidden="true">
+    <div class="hero-tile-grid"></div>
+    <div class="hero-tile-wetness" id="hero-tile-wetness"></div>
+  </div>
 
   <!-- Product stage -->
   <div class="hero-stage" id="hero-stage" aria-hidden="true">
     <div class="hero-product-wrap" id="hero-product-wrap">
-      <div class="hero-rgb-ring" id="hero-rgb-ring"></div>
-      <div class="hero-product-glow" id="hero-product-glow"></div>
-      {% if section.settings.product_image %}
-        <img
-          src="{{ section.settings.product_image | img_url: '800x' }}"
-          alt="{{ section.settings.product_image.alt | default: 'Speaker product' }}"
-          class="hero-product-img"
-          id="hero-product-img"
-          draggable="false"
-        >
-      {% else %}
-        <div class="hero-product-placeholder" id="hero-product-img">
-          <span>Add product image<br>in section settings</span>
+
+      <!-- Outer glow halo -->
+      <div class="hero-outer-glow" id="hero-outer-glow"></div>
+
+      <!-- The product itself -->
+      <div class="hero-speaker" id="hero-speaker">
+
+        <!-- Rubber body -->
+        <div class="hero-speaker__body" id="hero-speaker-body">
+
+          <!-- RGB ring — drawn faithfully via conic-gradient full spectrum -->
+          <div class="hero-speaker__ring" id="hero-speaker-ring">
+            <div class="hero-speaker__ring-inner"></div>
+          </div>
+
+          <!-- Control face -->
+          <div class="hero-speaker__face" id="hero-speaker-face">
+            <svg class="hero-speaker__icons" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Power -->
+              <circle cx="60" cy="22" r="4.5" fill="rgba(255,255,255,0.55)"/>
+              <path d="M56.5 20 A5.5 5.5 0 1 1 63.5 20" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" fill="none"/>
+              <!-- Skip back -->
+              <path d="M30 56 L38 51 L38 61 Z" fill="rgba(0,229,255,0.7)"/>
+              <line x1="29" y1="51" x2="29" y2="61" stroke="rgba(0,229,255,0.7)" stroke-width="1.8"/>
+              <!-- Skip forward -->
+              <path d="M90 56 L82 51 L82 61 Z" fill="rgba(255,180,0,0.7)"/>
+              <line x1="91" y1="51" x2="91" y2="61" stroke="rgba(255,180,0,0.7)" stroke-width="1.8"/>
+              <!-- Play/pause -->
+              <rect x="56" y="51" width="3.5" height="10" rx="1" fill="rgba(255,255,255,0.85)"/>
+              <rect x="61.5" y="51" width="3.5" height="10" rx="1" fill="rgba(255,255,255,0.85)"/>
+              <!-- Vol down -->
+              <path d="M46 79 L52 74 L52 84 Z" fill="rgba(255,255,255,0.45)"/>
+              <!-- Vol up -->
+              <path d="M74 79 L68 74 L68 84 Z" fill="rgba(255,255,255,0.45)"/>
+              <path d="M70 74 Q77 79 70 84" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none"/>
+              <!-- Center dot -->
+              <circle cx="60" cy="60" r="2.8" fill="rgba(255,255,255,0.3)"/>
+            </svg>
+          </div>
+
+          <!-- Water drops on body (CSS animated) -->
+          <div class="hero-speaker__drops" id="hero-speaker-drops"></div>
         </div>
-      {% endif %}
-      <div class="hero-water-surface" id="hero-water-surface"></div>
+      </div>
+
+      <!-- Product shadow/reflection on floor -->
+      <div class="hero-speaker__shadow"></div>
+
     </div>
   </div>
 
   <!-- Text overlays -->
   <div class="hero-copy" id="hero-copy-main" aria-label="{{ section.settings.headline }}">
-    <p class="hero-tagline" id="hero-tagline">{{ section.settings.headline | default: 'Transform Your Shower Experience' }}</p>
+    <p class="hero-tagline">{{ section.settings.headline | default: 'Transform Your Shower Experience' }}</p>
   </div>
+
   <div class="hero-copy hero-copy--end" id="hero-copy-end">
-    <div class="hero-logo-wrap" id="hero-logo-wrap">
+    <div class="hero-logo-wrap">
       {% if section.settings.store_logo %}
         <img src="{{ section.settings.store_logo | img_url: '300x' }}" alt="{{ shop.name }}" class="hero-logo-img">
       {% else %}
         <span class="hero-logo-text">{{ shop.name }}</span>
       {% endif %}
     </div>
-    <p class="hero-sub-tagline" id="hero-sub-tagline">{{ section.settings.sub_headline | default: 'Premium Sound. Anywhere.' }}</p>
+    <p class="hero-sub-tagline">{{ section.settings.sub_headline | default: 'Premium Sound. Anywhere.' }}</p>
     {% if section.settings.cta_text != blank %}
       <a href="{{ section.settings.cta_link | default: '/collections/all' }}" class="hero-cta-btn" id="hero-cta-btn">
         {{ section.settings.cta_text }}
@@ -56,19 +97,36 @@
     {% endif %}
   </div>
 
-  <!-- Vignette overlay -->
+  <!-- Vignette -->
   <div class="hero-vignette" aria-hidden="true"></div>
 
-  <!-- Replay button (accessible) -->
-  <button class="hero-replay-btn" id="hero-replay-btn" aria-label="Replay animation" title="Replay">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+  <!-- Custom product image overlay (if set) -->
+  {% if section.settings.product_image %}
+  <div class="hero-stage hero-stage--photo" id="hero-stage-photo" aria-hidden="true">
+    <div class="hero-product-photo-wrap" id="hero-product-photo-wrap">
+      <img
+        src="{{ section.settings.product_image | img_url: '1000x' }}"
+        alt="{{ section.settings.product_image.alt | default: section.settings.headline }}"
+        class="hero-product-photo"
+        id="hero-product-photo"
+        draggable="false"
+      >
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Replay -->
+  <button class="hero-replay-btn" id="hero-replay-btn" aria-label="Replay animation">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
   </button>
 </section>
 
 <style>
-/* ─────────────────────────────────────────────
-   HERO CINEMATIC — Base layout
-───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════
+   HERO CINEMATIC — SplashySound
+   Product: round black rubber RGB shower speaker
+══════════════════════════════════════════════════ */
+
 .hero-cinematic {
   position: relative;
   width: 100%;
@@ -81,13 +139,19 @@
   align-items: center;
   justify-content: center;
   font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  --rgb-a: #ff0055;
-  --rgb-b: #00e5ff;
-  --rgb-c: #a259ff;
-  --rgb-d: #00ff88;
-  --anim-speed: 1; /* multiplier — overridden by JS */
+
+  /* RGB palette matching actual product ring */
+  --c-red:    #ff1a1a;
+  --c-orange: #ff8800;
+  --c-yellow: #ffe000;
+  --c-green:  #00e855;
+  --c-cyan:   #00e5ff;
+  --c-blue:   #1a6aff;
+  --c-violet: #9933ff;
+  --c-magenta:#ff0088;
 }
 
+/* ─── Canvas layers ────────────────────────────── */
 .hero-canvas {
   position: absolute;
   inset: 0;
@@ -95,22 +159,58 @@
   height: 100%;
   pointer-events: none;
 }
-.hero-canvas--bg  { z-index: 1; }
-.hero-canvas--water { z-index: 4; }
+.hero-canvas--bg    { z-index: 1; }
+.hero-canvas--fx    { z-index: 4; }
+.hero-canvas--water { z-index: 7; }
 
-/* ─────────────────────────────────────────────
-   STAGE & PRODUCT
-───────────────────────────────────────────── */
+/* ─── Tile wall background ─────────────────────── */
+.hero-tile-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.hero-tile-bg.visible { opacity: 1; }
+
+.hero-tile-grid {
+  position: absolute;
+  inset: 0;
+  background-color: #c8c8c4;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px);
+  background-size: 120px 120px;
+  background-position: center center;
+}
+
+.hero-tile-wetness {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    160deg,
+    rgba(255,255,255,0.12) 0%,
+    rgba(200,220,230,0.08) 50%,
+    transparent 100%
+  );
+  opacity: 0;
+}
+
+/* ─── Stage ────────────────────────────────────── */
 .hero-stage {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transform: scale(0.88);
-  transition: none;
+  transform: scale(0.82) translateZ(0);
+  will-change: opacity, transform;
+}
+
+.hero-stage--photo {
+  z-index: 6;
 }
 
 .hero-product-wrap {
@@ -118,189 +218,268 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(260px, 36vw, 520px);
+}
+
+/* ─── Speaker — faithful to product ───────────── */
+.hero-speaker {
+  position: relative;
+  width: clamp(240px, 32vw, 480px);
   aspect-ratio: 1;
+  will-change: transform;
 }
 
-.hero-product-img {
-  position: relative;
-  z-index: 3;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 60px rgba(0,229,255,0.25));
-  transform-origin: center;
-  will-change: transform, filter;
-}
-
-.hero-product-placeholder {
-  position: relative;
-  z-index: 3;
-  width: 100%;
-  height: 100%;
-  border: 2px dashed rgba(255,255,255,0.2);
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255,255,255,0.4);
-  font-size: 14px;
-  text-align: center;
-  line-height: 1.6;
-}
-
-/* RGB ring */
-.hero-rgb-ring {
+/* Outer body — textured black rubber disc */
+.hero-speaker__body {
   position: absolute;
-  inset: -12%;
-  z-index: 2;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 35% 30%, rgba(80,80,80,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 75%, rgba(20,20,20,0.6) 0%, transparent 50%),
+    #1a1a1a;
+  box-shadow:
+    inset 0 2px 8px rgba(255,255,255,0.06),
+    inset 0 -4px 16px rgba(0,0,0,0.7),
+    0 20px 60px rgba(0,0,0,0.7),
+    0 4px 20px rgba(0,0,0,0.5);
+  /* Subtle rubber texture via repeating noise approximation */
+  background-image:
+    radial-gradient(ellipse at 35% 30%, rgba(80,80,80,0.3) 0%, transparent 55%),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255,255,255,0.012) 2px,
+      rgba(255,255,255,0.012) 3px
+    ),
+    radial-gradient(circle at center, #222 0%, #111 70%, #0a0a0a 100%);
+}
+
+/* RGB ring — full spectrum conic-gradient, faithful to product */
+.hero-speaker__ring {
+  position: absolute;
+  inset: 12%;
   border-radius: 50%;
   background: conic-gradient(
     from 0deg,
-    var(--rgb-a),
-    var(--rgb-c),
-    var(--rgb-b),
-    var(--rgb-d),
-    var(--rgb-a)
+    #ff1a1a   0deg,
+    #ff6600   30deg,
+    #ffdd00   60deg,
+    #00e855   90deg,
+    #00ddff  130deg,
+    #0055ff  170deg,
+    #8800ff  210deg,
+    #ff0088  250deg,
+    #ff1a1a  300deg,
+    #ff6600  330deg,
+    #ffdd00  360deg
   );
-  filter: blur(28px);
+  padding: 5%;
   opacity: 0;
+  filter: blur(0px);
+  will-change: opacity, transform, filter;
   animation: none;
-  will-change: opacity, transform;
 }
 
-/* Product glow halo */
-.hero-product-glow {
+.hero-speaker__ring-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #0e0e12;
+  box-shadow:
+    inset 0 2px 12px rgba(0,0,0,0.9),
+    inset 0 0 6px rgba(0,200,255,0.08);
+}
+
+/* Control face icons */
+.hero-speaker__face {
   position: absolute;
-  inset: -20%;
-  z-index: 1;
+  inset: 22%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.hero-speaker__icons {
+  width: 75%;
+  height: 75%;
+}
+
+/* Water drops on rubber surface */
+.hero-speaker__drops {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-drop {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(255,255,255,0.9) 0%,
+    rgba(200,230,255,0.6) 25%,
+    rgba(100,180,255,0.3) 60%,
+    transparent 100%
+  );
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  opacity: 0;
+  transform: scale(0);
+  animation: drop-appear 0.3s ease forwards;
+}
+@keyframes drop-appear {
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Shadow / floor reflection */
+.hero-speaker__shadow {
+  position: absolute;
+  bottom: -12%;
+  left: 10%;
+  right: 10%;
+  height: 10%;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(8px);
+}
+
+/* ─── Photo override (when product image set) ─── */
+.hero-product-photo-wrap {
+  position: relative;
+  width: clamp(280px, 36vw, 560px);
+  aspect-ratio: 1;
+  will-change: transform;
+}
+
+.hero-product-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  will-change: transform, filter;
+  filter: drop-shadow(0 0 40px rgba(0,200,255,0.2));
+}
+
+/* Outer glow pulse */
+.hero-outer-glow {
+  position: absolute;
+  inset: -18%;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(0,229,255,0.35) 0%,
-    rgba(162,89,255,0.18) 40%,
-    transparent 70%
+    rgba(0,180,255,0.18) 0%,
+    rgba(150,50,255,0.12) 45%,
+    transparent 72%
   );
   opacity: 0;
   will-change: opacity;
-}
-
-/* Water surface reflection */
-.hero-water-surface {
-  position: absolute;
-  bottom: -5%;
-  left: 5%;
-  right: 5%;
-  height: 30%;
-  z-index: 4;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,229,255,0.08),
-    transparent
-  );
   filter: blur(2px);
-  opacity: 0;
-  transform: scaleY(-1) translateY(0);
-  border-radius: 50%;
 }
 
-/* ─────────────────────────────────────────────
-   TEXT COPY
-───────────────────────────────────────────── */
+/* ─── Text copy ────────────────────────────────── */
 .hero-copy {
   position: absolute;
   z-index: 10;
   text-align: center;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(16px);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
+  will-change: opacity, transform;
 }
 
 .hero-tagline {
-  font-size: clamp(28px, 4.5vw, 72px);
+  font-size: clamp(26px, 4vw, 68px);
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #fff;
+  letter-spacing: -0.025em;
   margin: 0;
-  text-shadow: 0 0 60px rgba(0,229,255,0.5), 0 2px 40px rgba(0,0,0,0.8);
-  background: linear-gradient(135deg, #fff 40%, rgba(0,229,255,0.85) 100%);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(0, 229, 255, 0.9) 50%,
+    rgba(180, 80, 255, 0.8) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 40px rgba(0,229,255,0.4));
 }
 
 .hero-copy--end {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  bottom: 12%;
+  gap: 14px;
+  bottom: 10%;
+  transform: translateX(-50%) translateY(12px);
 }
 
 .hero-logo-wrap { display: flex; align-items: center; justify-content: center; }
-.hero-logo-img  { height: 44px; width: auto; filter: brightness(0) invert(1); }
+.hero-logo-img  { height: 40px; width: auto; filter: brightness(0) invert(1); }
 .hero-logo-text {
-  font-size: clamp(22px, 3vw, 42px);
+  font-size: clamp(20px, 2.8vw, 40px);
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.03em;
 }
 
 .hero-sub-tagline {
-  font-size: clamp(14px, 1.8vw, 22px);
+  font-size: clamp(12px, 1.5vw, 20px);
   font-weight: 400;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255,255,255,0.55);
   margin: 0;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .hero-cta-btn {
   display: inline-block;
-  padding: 14px 36px;
-  background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.6);
+  padding: 13px 34px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.5);
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   text-decoration: none;
   border-radius: 40px;
-  pointer-events: all;
+  pointer-events: none;
   transition: background 0.3s, border-color 0.3s, transform 0.2s;
   backdrop-filter: blur(8px);
 }
 .hero-cta-btn:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(0,229,255,0.8);
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.8);
   transform: scale(1.04);
 }
 
-/* ─────────────────────────────────────────────
-   VIGNETTE & REPLAY
-───────────────────────────────────────────── */
+/* ─── Vignette ─────────────────────────────────── */
 .hero-vignette {
   position: absolute;
   inset: 0;
-  z-index: 5;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%);
+  z-index: 8;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.65) 100%);
   pointer-events: none;
 }
 
+/* ─── Replay ────────────────────────────────────── */
 .hero-replay-btn {
   position: absolute;
   bottom: 20px;
   right: 20px;
   z-index: 20;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.07);
   border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.45);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,367 +488,498 @@
   transition: opacity 0.4s, background 0.2s, color 0.2s;
   backdrop-filter: blur(6px);
 }
-.hero-replay-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
 .hero-replay-btn.visible { opacity: 1; }
+.hero-replay-btn:hover   { background: rgba(255,255,255,0.14); color: #fff; }
 
-/* ─────────────────────────────────────────────
-   RESPONSIVE
-───────────────────────────────────────────── */
+/* ─── Responsive ────────────────────────────────── */
 @media (max-width: 768px) {
-  .hero-cinematic { height: 100svh; min-height: 480px; }
-  .hero-product-wrap { width: clamp(200px, 60vw, 340px); }
-  .hero-copy--end { bottom: 8%; }
+  .hero-cinematic    { min-height: 480px; }
+  .hero-speaker      { width: clamp(180px, 55vw, 300px); }
+  .hero-product-photo-wrap { width: clamp(200px, 58vw, 340px); }
+  .hero-copy--end    { bottom: 7%; }
+  .hero-tagline      { white-space: normal; max-width: 80vw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-stage { opacity: 1 !important; transform: none !important; }
-  .hero-rgb-ring { opacity: 0.6 !important; }
-  #hero-copy-main { opacity: 1 !important; transform: translateX(-50%) !important; }
-  #hero-copy-end  { opacity: 1 !important; }
-  .hero-replay-btn { opacity: 1 !important; }
+  .hero-stage                { opacity: 1 !important; transform: none !important; }
+  .hero-tile-bg              { opacity: 1 !important; }
+  .hero-speaker__ring        { opacity: 1 !important; }
+  .hero-speaker__face        { opacity: 1 !important; }
+  .hero-outer-glow           { opacity: 0.7 !important; }
+  #hero-copy-main            { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; bottom: 30% !important; }
+  #hero-copy-end             { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+  .hero-cta-btn              { pointer-events: all !important; }
+  .hero-replay-btn           { opacity: 0 !important; }
 }
 </style>
 
 <script>
+/* ═══════════════════════════════════════════════════
+   SplashySound Hero — Cinematic Engine
+   Faithful to: circular black rubber speaker, full-spectrum RGB ring
+   Timeline: 15 seconds @ 60fps
+══════════════════════════════════════════════════ */
 (function () {
   'use strict';
 
-  /* ── Utilities ─────────────────────────────────────────────── */
-  const lerp  = (a, b, t) => a + (b - a) * t;
-  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-  const ease  = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;   // easeInOut
+  /* ── Math helpers ────────────────────────────── */
+  const lerp    = (a, b, t) => a + (b - a) * t;
+  const clamp   = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const easeIO  = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const easeIn  = t => t * t * t;
+  const rnd     = (lo, hi) => lo + Math.random() * (hi - lo);
 
-  /* ── DOM references ─────────────────────────────────────────── */
-  const section     = document.getElementById('hero-cinematic');
+  /* ── DOM ─────────────────────────────────────── */
+  const root        = document.getElementById('hero-cinematic');
   const bgCanvas    = document.getElementById('hero-bg-canvas');
+  const fxCanvas    = document.getElementById('hero-fx-canvas');
   const waterCanvas = document.getElementById('hero-water-canvas');
+  const tileBg      = document.getElementById('hero-tile-bg');
+  const tileWet     = document.getElementById('hero-tile-wetness');
   const stage       = document.getElementById('hero-stage');
-  const productWrap = document.getElementById('hero-product-wrap');
-  const productImg  = document.getElementById('hero-product-img');
-  const rgbRing     = document.getElementById('hero-rgb-ring');
-  const productGlow = document.getElementById('hero-product-glow');
-  const waterSurface= document.getElementById('hero-water-surface');
+  const stagePh     = document.getElementById('hero-stage-photo');
+  const speakerEl   = document.getElementById('hero-speaker');
+  const speakerBody = document.getElementById('hero-speaker-body');
+  const ring        = document.getElementById('hero-speaker-ring');
+  const face        = document.getElementById('hero-speaker-face');
+  const dropsEl     = document.getElementById('hero-speaker-drops');
+  const outerGlow   = document.getElementById('hero-outer-glow');
+  const photoWrap   = document.getElementById('hero-product-photo-wrap');
+  const photoImg    = document.getElementById('hero-product-photo');
   const copyMain    = document.getElementById('hero-copy-main');
   const copyEnd     = document.getElementById('hero-copy-end');
+  const ctaBtn      = document.getElementById('hero-cta-btn');
   const replayBtn   = document.getElementById('hero-replay-btn');
 
-  /* ── Canvas contexts ────────────────────────────────────────── */
+  /* ── Contexts ────────────────────────────────── */
   const bgCtx    = bgCanvas.getContext('2d');
-  const waterCtx = waterCanvas.getContext('2d');
+  const fxCtx    = fxCanvas.getContext('2d');
+  const wCtx     = waterCanvas.getContext('2d');
 
-  /* ── State ──────────────────────────────────────────────────── */
+  /* ── State ───────────────────────────────────── */
   let W = 0, H = 0;
-  let startTime = null;
-  let rafId = null;
-  let waterDrops = [];
-  let showerStreams = [];
-  let rgbAngle = 0;
-  let orbitAngle = 0;
-  let isLooping = false;
+  let startTs = null, rafId = null;
+  let waterDrops   = [];
+  let showerLines  = [];
+  let splashParts  = [];
+  let ringRotation = 0;
+  let orbitY       = 0;   // rotateY for orbital
 
-  /* ── Resize ─────────────────────────────────────────────────── */
+  /* ── Particles (ambient) ─────────────────────── */
+  const AMBIENT = Array.from({ length: 60 }, () => ({
+    x: Math.random(), y: Math.random(),
+    r: rnd(0.5, 2.2),
+    vy: rnd(0.00008, 0.00022),
+    hue: Math.random() * 360,
+    op: rnd(0.08, 0.5),
+  }));
+
+  /* ── Resize ──────────────────────────────────── */
   function resize() {
-    W = section.offsetWidth;
-    H = section.offsetHeight;
-    [bgCanvas, waterCanvas].forEach(c => {
-      c.width  = W;
-      c.height = H;
+    W = root.offsetWidth;
+    H = root.offsetHeight;
+    [bgCanvas, fxCanvas, waterCanvas].forEach(c => {
+      c.width = W; c.height = H;
     });
   }
 
-  /* ── Particles: ambient background particles ─────────────────── */
-  const PARTICLES = Array.from({ length: 80 }, () => ({
-    x: Math.random(),
-    y: Math.random(),
-    r: Math.random() * 1.8 + 0.4,
-    speed: Math.random() * 0.00012 + 0.00004,
-    hue: Math.random() * 360,
-    opacity: Math.random() * 0.6 + 0.1,
-  }));
-
-  function drawBackground(t) {
+  /* ══════════════════════════════════════════════
+     DRAW: Background gradient + particles
+  ════════════════════════════════════════════ */
+  function drawBG(sec) {
     bgCtx.clearRect(0, 0, W, H);
 
-    /* Gradient backdrop */
-    const grd = bgCtx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
-    grd.addColorStop(0,   `rgba(8, 10, 22, ${clamp(t * 0.8, 0, 1)})`);
-    grd.addColorStop(0.5, `rgba(4, 6, 16,  ${clamp(t * 0.9, 0, 1)})`);
-    grd.addColorStop(1,   'rgba(0, 0, 0, 1)');
-    bgCtx.fillStyle = grd;
+    const t = clamp(sec / 3, 0, 1);
+    /* Deep dark background — evokes a shower stall at night */
+    const g = bgCtx.createRadialGradient(W * 0.5, H * 0.4, 0, W * 0.5, H * 0.5, Math.hypot(W, H) * 0.65);
+    g.addColorStop(0,   `rgba(10, 12, 24, ${clamp(t, 0, 1)})`);
+    g.addColorStop(0.6, `rgba(5, 6, 14, ${clamp(t * 0.95, 0, 1)})`);
+    g.addColorStop(1,   'rgba(0,0,0,1)');
+    bgCtx.fillStyle = g;
     bgCtx.fillRect(0, 0, W, H);
 
-    /* Floating micro-particles */
-    if (t > 0.3) {
-      const pOpacity = clamp((t - 0.3) / 0.4, 0, 1);
-      PARTICLES.forEach(p => {
-        p.y -= p.speed;
-        if (p.y < 0) { p.y = 1; p.x = Math.random(); }
+    /* Floating particles (visible from 1.5s) */
+    if (sec > 1.5) {
+      const pAlpha = clamp((sec - 1.5) / 2, 0, 1);
+      AMBIENT.forEach(p => {
+        p.y -= p.vy;
+        if (p.y < 0) { p.y = 1.02; p.x = Math.random(); }
         bgCtx.beginPath();
         bgCtx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
-        bgCtx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.opacity * pOpacity})`;
+        bgCtx.fillStyle = `hsla(${p.hue},75%,70%,${p.op * pAlpha})`;
         bgCtx.fill();
       });
     }
   }
 
-  /* ── RGB ring glow ────────────────────────────────────────────── */
-  function updateRGBRing(t, sec) {
-    /* Phase: 0-2s = dark, 2-5s = ring fade in, 5+ = sustained */
-    const phase1 = clamp((sec - 2) / 1.5, 0, 1); // fade in
-    const phase2 = clamp((sec - 12) / 1.5, 0, 1); // fade for finale
-    const opacity = easeOut(phase1) * (1 - phase2 * 0.3);
-    rgbRing.style.opacity = opacity;
-    rgbRing.style.transform = `rotate(${rgbAngle}deg) scale(${1 + Math.sin(sec * 0.8) * 0.03})`;
-    rgbAngle += 0.18;
+  /* ══════════════════════════════════════════════
+     DRAW: RGB lens flare emanating from ring
+  ════════════════════════════════════════════ */
+  function drawFX(sec) {
+    fxCtx.clearRect(0, 0, W, H);
 
-    productGlow.style.opacity = easeOut(phase1) * 0.9;
+    /* Ring glow corona — mirrors conic-gradient on DOM ring */
+    const ringPhase = clamp((sec - 2) / 2, 0, 1);
+    if (ringPhase <= 0) return;
+
+    const cx = W / 2, cy = H / 2;
+    const R  = Math.min(W, H) * 0.19 * (stagePh ? 1 : 1);
+
+    /* Glowing corona sweep */
+    const hues = [0, 30, 60, 110, 185, 220, 270, 320];
+    hues.forEach((hue, i) => {
+      const angle = (i / hues.length) * Math.PI * 2 + ringRotation * 0.012;
+      const gx = cx + Math.cos(angle) * R;
+      const gy = cy + Math.sin(angle) * R;
+      const g = fxCtx.createRadialGradient(gx, gy, 0, gx, gy, R * 0.55);
+      g.addColorStop(0,   `hsla(${hue},100%,60%,${0.22 * ringPhase})`);
+      g.addColorStop(0.5, `hsla(${hue},90%,50%,${0.06 * ringPhase})`);
+      g.addColorStop(1,   'transparent');
+      fxCtx.beginPath();
+      fxCtx.arc(gx, gy, R * 0.55, 0, Math.PI * 2);
+      fxCtx.fillStyle = g;
+      fxCtx.fill();
+    });
+
+    /* Subtle lens streak on ring highlights */
+    if (sec > 5) {
+      const streakAlpha = clamp((sec - 5) / 2, 0, 1) * 0.35 * ringPhase;
+      fxCtx.save();
+      fxCtx.globalAlpha = streakAlpha;
+      fxCtx.strokeStyle = 'rgba(0,229,255,0.4)';
+      fxCtx.lineWidth = 1.5;
+      fxCtx.beginPath();
+      fxCtx.moveTo(cx - W * 0.4, cy);
+      fxCtx.lineTo(cx + W * 0.4, cy);
+      fxCtx.stroke();
+      fxCtx.restore();
+    }
   }
 
-  /* ── Water droplets ─────────────────────────────────────────── */
+  /* ══════════════════════════════════════════════
+     DRAW: Water — drops, streams, splashes
+  ════════════════════════════════════════════ */
   function spawnDrop(sec) {
     const cx = W / 2, cy = H / 2;
-    const spread = Math.min(W, H) * 0.22;
-    const x = cx + (Math.random() - 0.5) * spread * 2;
-    const y = cy + (Math.random() - 0.5) * spread * 1.4;
+    /* Drops appear on/around the speaker body */
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = rnd(0.06, 0.20) * Math.min(W, H);
     waterDrops.push({
-      x, y,
-      r: Math.random() * 6 + 3,
-      opacity: 0,
-      maxOpacity: Math.random() * 0.85 + 0.15,
+      x: cx + Math.cos(angle) * dist,
+      y: cy + Math.sin(angle) * dist,
+      r: rnd(3, 9),
       life: 0,
-      maxLife: Math.random() * 90 + 60,
-      hue: Math.random() < 0.4 ? 195 : (Math.random() < 0.5 ? 280 : 340),
+      maxLife: rnd(50, 120),
+      hue: [195, 280, 340, 45][Math.floor(Math.random() * 4)],  // cyan/violet/magenta/gold
+      maxOp: rnd(0.5, 0.92),
     });
   }
 
-  function drawDroplets(sec) {
-    waterCtx.clearRect(0, 0, W, H);
+  function initShower() {
+    showerLines = [];
+    for (let i = 0; i < 28; i++) {
+      showerLines.push({
+        x: rnd(W * 0.1, W * 0.9),
+        vy: rnd(5, 11),
+        len: rnd(40, 100),
+        op: rnd(0.3, 0.75),
+        hue: Math.random() < 0.5 ? 195 : 210,
+        offset: rnd(0, H * 1.4),
+        w: rnd(0.8, 2.2),
+      });
+    }
+  }
 
-    /* Phase 5-8: drops appear */
+  function spawnSplash(x, y) {
+    for (let i = 0; i < 6; i++) {
+      const angle = rnd(Math.PI * 0.8, Math.PI * 2.2);
+      splashParts.push({
+        x, y,
+        vx: Math.cos(angle) * rnd(1.5, 4),
+        vy: Math.sin(angle) * rnd(1.5, 4) - rnd(1, 3),
+        r: rnd(1, 3.5),
+        life: 0,
+        maxLife: rnd(20, 40),
+        hue: 195,
+      });
+    }
+  }
+
+  function drawWater(sec) {
+    wCtx.clearRect(0, 0, W, H);
+
+    /* ── Drops (5–8s) ────────────────────── */
     const dropPhase = clamp((sec - 5) / 2, 0, 1);
-    if (dropPhase > 0 && Math.random() < dropPhase * 0.35) spawnDrop(sec);
+    if (dropPhase > 0 && Math.random() < dropPhase * 0.3) spawnDrop(sec);
 
-    /* Phase 8-12: shower — extra drops */
-    if (sec > 8 && Math.random() < 0.6) spawnDrop(sec);
+    /* ── Shower (8–12s) ──────────────────── */
+    const showerPhase = clamp((sec - 8) / 1.5, 0, 1);
+    const showerFade  = clamp((sec - 12) / 0.8, 0, 1);
+    const showerAlpha = easeOut(showerPhase) * (1 - showerFade);
 
+    if (showerPhase > 0 && showerLines.length === 0) initShower();
+
+    if (showerAlpha > 0) {
+      showerLines.forEach(s => {
+        s.offset = (s.offset + s.vy) % (H * 1.5);
+        const sy = s.offset - H * 0.25;
+
+        /* Random splash at bottom of stream */
+        if (Math.random() < 0.008 && sec < 12) spawnSplash(s.x, sy + s.len);
+
+        const sg = wCtx.createLinearGradient(s.x, sy, s.x, sy + s.len);
+        sg.addColorStop(0,   `hsla(${s.hue},70%,85%,0)`);
+        sg.addColorStop(0.25, `hsla(${s.hue},75%,80%,${s.op * showerAlpha})`);
+        sg.addColorStop(0.8, `hsla(${s.hue},65%,70%,${s.op * showerAlpha * 0.5})`);
+        sg.addColorStop(1,   `hsla(${s.hue},60%,60%,0)`);
+
+        wCtx.beginPath();
+        wCtx.moveTo(s.x, sy);
+        wCtx.lineTo(s.x, sy + s.len);
+        wCtx.strokeStyle = sg;
+        wCtx.lineWidth = s.w;
+        wCtx.stroke();
+      });
+    }
+
+    /* ── Drop render ─────────────────────── */
     waterDrops = waterDrops.filter(d => d.life < d.maxLife);
     waterDrops.forEach(d => {
       d.life++;
-      const lt = d.life / d.maxLife;
-      d.opacity = lt < 0.15 ? lt / 0.15 : lt > 0.75 ? (1 - lt) / 0.25 : 1;
-      d.opacity *= d.maxOpacity;
+      const lt  = d.life / d.maxLife;
+      const op  = (lt < 0.2 ? lt / 0.2 : lt > 0.7 ? (1 - lt) / 0.3 : 1) * d.maxOp;
 
-      /* Drop body */
-      const grd = waterCtx.createRadialGradient(d.x - d.r * 0.25, d.y - d.r * 0.25, 0, d.x, d.y, d.r);
-      grd.addColorStop(0, `hsla(${d.hue}, 100%, 90%, ${d.opacity * 0.9})`);
-      grd.addColorStop(0.4, `hsla(${d.hue}, 80%, 60%, ${d.opacity * 0.7})`);
-      grd.addColorStop(1,   `hsla(${d.hue}, 60%, 30%, ${d.opacity * 0.1})`);
-
-      waterCtx.beginPath();
-      waterCtx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      waterCtx.fillStyle = grd;
-      waterCtx.fill();
+      /* Body */
+      const dg = wCtx.createRadialGradient(d.x - d.r * 0.28, d.y - d.r * 0.28, 0, d.x, d.y, d.r);
+      dg.addColorStop(0,   `hsla(${d.hue},95%,90%,${op * 0.95})`);
+      dg.addColorStop(0.4, `hsla(${d.hue},80%,65%,${op * 0.7})`);
+      dg.addColorStop(1,   `hsla(${d.hue},60%,35%,${op * 0.08})`);
+      wCtx.beginPath();
+      wCtx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      wCtx.fillStyle = dg;
+      wCtx.fill();
 
       /* Specular highlight */
-      waterCtx.beginPath();
-      waterCtx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.28, 0, Math.PI * 2);
-      waterCtx.fillStyle = `rgba(255,255,255,${d.opacity * 0.75})`;
-      waterCtx.fill();
+      wCtx.beginPath();
+      wCtx.arc(d.x - d.r * 0.32, d.y - d.r * 0.32, d.r * 0.3, 0, Math.PI * 2);
+      wCtx.fillStyle = `rgba(255,255,255,${op * 0.8})`;
+      wCtx.fill();
     });
 
-    /* Shower streams (phase 8-12) */
-    drawShower(sec);
+    /* ── Splash particles ────────────────── */
+    splashParts = splashParts.filter(p => p.life < p.maxLife);
+    splashParts.forEach(p => {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.18;   // gravity
+      p.life++;
+      const lt = 1 - p.life / p.maxLife;
+      wCtx.beginPath();
+      wCtx.arc(p.x, p.y, p.r * lt, 0, Math.PI * 2);
+      wCtx.fillStyle = `hsla(${p.hue},80%,85%,${lt * 0.7})`;
+      wCtx.fill();
+    });
   }
 
-  function drawShower(sec) {
-    const showerPhase = clamp((sec - 8) / 1.5, 0, 1);
-    const showerEnd   = clamp((sec - 12) / 1.0, 0, 1);
-    const alpha = easeOut(showerPhase) * (1 - showerEnd);
-    if (alpha <= 0) return;
+  /* ══════════════════════════════════════════════
+     UPDATE: Speaker DOM animations
+  ════════════════════════════════════════════ */
+  function updateSpeaker(sec) {
+    /* Stage fade-in at 2s */
+    const fadeIn = clamp((sec - 2) / 2, 0, 1);
+    const stageOp = easeOut(fadeIn);
+    stage.style.opacity   = stageOp;
+    stage.style.transform = `scale(${lerp(0.82, 1, easeOut(fadeIn))}) translateZ(0)`;
 
-    /* Initialise streams once */
-    if (showerStreams.length === 0) {
-      for (let i = 0; i < 22; i++) {
-        showerStreams.push({
-          x: W * (0.3 + Math.random() * 0.4),
-          vy: Math.random() * 4 + 6,
-          len: Math.random() * 60 + 30,
-          opacity: Math.random() * 0.6 + 0.2,
-          hue: Math.random() < 0.4 ? 195 : 280,
-          offset: Math.random() * H,
-        });
+    /* Photo stage (if product image is set) */
+    if (stagePh) {
+      stagePh.style.opacity   = stageOp;
+      stagePh.style.transform = stage.style.transform;
+    }
+
+    /* RGB ring fade in 2–4s */
+    const ringAlpha = clamp((sec - 2) / 2, 0, 1);
+    ring.style.opacity = easeOut(ringAlpha);
+    ring.style.filter  = `blur(${lerp(6, 0, easeOut(ringAlpha))}px)`;
+    ring.style.transform = `rotate(${ringRotation}deg)`;
+    ringRotation += 0.25;  // slow continuous rotation of ring colours
+
+    /* Ring pulsing brightness */
+    const pulse = 1 + Math.sin(sec * 2.5) * 0.06;
+    ring.style.scale = pulse;
+
+    /* Face icons appear at 3s */
+    face.style.opacity = clamp((sec - 3) / 1.5, 0, 1) * 0.9;
+
+    /* Outer glow */
+    outerGlow.style.opacity = easeOut(clamp((sec - 2) / 3, 0, 1)) * 0.85;
+
+    /* Macro zoom: 2–5s */
+    const macroT = clamp((sec - 2) / 3, 0, 1);
+    const macroScale = lerp(1, 1.22, easeIO(macroT));
+
+    /* Orbital 180° rotation: 8–12s */
+    let rotY = 0;
+    if (sec >= 8 && sec < 12) {
+      const ot = clamp((sec - 8) / 4, 0, 1);
+      rotY = lerp(0, 180, easeIO(ot));
+    } else if (sec >= 12) {
+      rotY = lerp(180, 215, easeIO(clamp((sec - 12) / 2, 0, 1)));
+    }
+    orbitY = rotY;
+
+    /* Studio isolation scale: 12–14s */
+    const studioScale = sec >= 12 ? lerp(macroScale, 1.08, easeIO(clamp((sec - 12) / 2, 0, 1))) : macroScale;
+
+    const target = stagePh && photoWrap ? photoWrap : speakerEl;
+    target.style.transform = `scale(${studioScale}) rotateY(${rotY}deg)`;
+    if (!stagePh) {
+      speakerEl.style.transform = `scale(${studioScale}) rotateY(${rotY}deg)`;
+    }
+
+    /* Premium studio glow on speaker body during isolation phase */
+    if (sec >= 12) {
+      const gT = clamp((sec - 12) / 1.5, 0, 1);
+      const img = stagePh ? photoImg : speakerBody;
+      if (img) {
+        img.style.filter =
+          `drop-shadow(0 0 ${lerp(20, 80, gT)}px rgba(0,200,255,${lerp(0.1, 0.55, gT)}))` +
+          ` drop-shadow(0 0 ${lerp(10, 40, gT)}px rgba(180,50,255,${lerp(0.05, 0.28, gT)}))`;
       }
     }
 
-    showerStreams.forEach(s => {
-      s.offset = (s.offset + s.vy) % (H * 1.5);
-      const sy = s.offset - H * 0.25;
-
-      const grd = waterCtx.createLinearGradient(s.x, sy, s.x, sy + s.len);
-      grd.addColorStop(0,   `hsla(${s.hue}, 80%, 80%, 0)`);
-      grd.addColorStop(0.3, `hsla(${s.hue}, 80%, 80%, ${s.opacity * alpha})`);
-      grd.addColorStop(1,   `hsla(${s.hue}, 70%, 60%, 0)`);
-
-      waterCtx.beginPath();
-      waterCtx.moveTo(s.x, sy);
-      waterCtx.lineTo(s.x, sy + s.len);
-      waterCtx.strokeStyle = grd;
-      waterCtx.lineWidth = Math.random() * 1.5 + 0.5;
-      waterCtx.stroke();
-    });
-  }
-
-  /* ── Stage & product animations ──────────────────────────────── */
-  function updateStage(sec) {
-    /* Fade in stage at 2s */
-    const fadeIn  = clamp((sec - 2) / 2, 0, 1);
-    stage.style.opacity   = easeOut(fadeIn);
-    stage.style.transform = `scale(${lerp(0.88, 1, easeOut(fadeIn))})`;
-
-    /* Macro zoom: 2-5s → zoom in closer */
-    const macroZoom = clamp((sec - 2) / 3, 0, 1);
-    const scale = lerp(1, 1.18, ease(macroZoom));
-
-    /* Orbital rotation: 8-12s */
-    if (sec > 8 && sec < 12) {
-      const orbitT = clamp((sec - 8) / 4, 0, 1);
-      orbitAngle = lerp(0, 180, ease(orbitT));
-      productWrap.style.transform = `scale(${scale}) rotateY(${orbitAngle}deg)`;
-    } else if (sec >= 12) {
-      /* Studio rotation: 12-14s */
-      const rotT = clamp((sec - 12) / 2, 0, 1);
-      const slowRot = lerp(180, 210, ease(rotT));
-      const studioScale = lerp(scale, 1.05, ease(rotT));
-      productWrap.style.transform = `scale(${studioScale}) rotateY(${slowRot}deg)`;
-
-      /* Premium studio lighting glow */
-      const studioGlow = clamp((sec - 12) / 1, 0, 1);
-      productImg.style.filter = `drop-shadow(0 0 ${lerp(60, 120, studioGlow)}px rgba(0,229,255,${lerp(0.25, 0.6, studioGlow)})) drop-shadow(0 0 ${lerp(20, 60, studioGlow)}px rgba(162,89,255,${lerp(0.1, 0.35, studioGlow)}))`;
-    } else {
-      productWrap.style.transform = `scale(${scale}) rotateY(0deg)`;
+    /* Tile wall reveal at 4s */
+    if (sec > 4) {
+      tileBg.classList.add('visible');
+      tileWet.style.opacity = clamp((sec - 8) / 3, 0, 0.5);
     }
 
-    /* Water surface reflection */
-    const waterReflect = clamp((sec - 5) / 2, 0, 1) * (1 - clamp((sec - 12) / 1, 0, 1));
-    waterSurface.style.opacity = easeOut(waterReflect) * 0.7;
+    /* CSS water drops on body surface (5–8s) */
+    if (sec >= 5) spawnCSSDrops(sec);
   }
 
-  /* ── Text overlays ───────────────────────────────────────────── */
+  /* Spawn occasional CSS drops on the rubber body */
+  let lastCSSDropTime = 0;
+  function spawnCSSDrops(sec) {
+    if (sec - lastCSSDropTime < 0.18) return;
+    if (!dropsEl || Math.random() > 0.45) return;
+    lastCSSDropTime = sec;
+
+    const bodySize = speakerEl.offsetWidth || 300;
+    const drop = document.createElement('div');
+    drop.className = 'hero-drop';
+    const sz = rnd(4, 11);
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = rnd(0.08, 0.38) * bodySize;
+    drop.style.cssText =
+      `width:${sz}px;height:${sz}px;` +
+      `left:${50 + Math.cos(angle) * dist / bodySize * 100}%;` +
+      `top:${50  + Math.sin(angle) * dist / bodySize * 100}%;` +
+      `transform:translate(-50%,-50%) scale(0);` +
+      `animation-duration:${rnd(0.25,0.5)}s;`;
+    dropsEl.appendChild(drop);
+    setTimeout(() => drop.remove(), rnd(1800, 4000));
+  }
+
+  /* ══════════════════════════════════════════════
+     UPDATE: Text overlays
+  ════════════════════════════════════════════ */
   function updateCopy(sec) {
-    /* Main headline: 12-14s */
-    const headIn  = clamp((sec - 12) / 0.8, 0, 1);
-    const headOut = clamp((sec - 14) / 0.4, 0, 1);
-    const headOp  = easeOut(headIn) * (1 - headOut);
-    copyMain.style.opacity   = headOp;
-    copyMain.style.transform = `translateX(-50%) translateY(${lerp(20, 0, easeOut(headIn))}px)`;
-    copyMain.style.bottom    = '32%';
+    /* Main headline: 12–14s */
+    const hIn  = easeOut(clamp((sec - 12) / 0.9, 0, 1));
+    const hOut = clamp((sec - 14) / 0.4, 0, 1);
+    copyMain.style.opacity   = hIn * (1 - hOut);
+    copyMain.style.transform = `translateX(-50%) translateY(${lerp(18, 0, hIn)}px)`;
+    copyMain.style.bottom    = '30%';
 
-    /* End card: 14-15s */
-    const endIn = clamp((sec - 14) / 0.6, 0, 1);
-    copyEnd.style.opacity   = easeOut(endIn);
-    copyEnd.style.transform = `translateX(-50%) translateY(${lerp(12, 0, easeOut(endIn))}px)`;
-
-    /* Show CTA button when end card visible */
-    const ctaBtn = document.getElementById('hero-cta-btn');
-    if (ctaBtn) {
-      ctaBtn.style.pointerEvents = endIn > 0.8 ? 'all' : 'none';
-    }
+    /* End card: 14–15s */
+    const eIn = easeOut(clamp((sec - 14) / 0.7, 0, 1));
+    copyEnd.style.opacity   = eIn;
+    copyEnd.style.transform = `translateX(-50%) translateY(${lerp(12, 0, eIn)}px)`;
+    if (ctaBtn) ctaBtn.style.pointerEvents = eIn > 0.8 ? 'all' : 'none';
   }
 
-  /* ── Main animation loop ─────────────────────────────────────── */
-  function animate(ts) {
-    if (!startTime) startTime = ts;
-    const elapsed = (ts - startTime) / 1000; // seconds
-    const sec     = Math.min(elapsed, 15);
-    const t       = sec / 15; // 0→1
+  /* ══════════════════════════════════════════════
+     MAIN LOOP
+  ════════════════════════════════════════════ */
+  function tick(ts) {
+    if (!startTs) startTs = ts;
+    const sec = Math.min((ts - startTs) / 1000, 15.2);
 
-    drawBackground(t);
-    updateRGBRing(t, sec);
-    drawDroplets(sec);
-    updateStage(sec);
+    drawBG(sec);
+    drawFX(sec);
+    drawWater(sec);
+    updateSpeaker(sec);
     updateCopy(sec);
 
-    /* Loop-ready fade at 15s */
-    if (sec >= 14.8) {
-      const fadeOut = clamp((sec - 14.8) / 0.2, 0, 1);
-      section.style.setProperty('--loop-fade', fadeOut);
-    }
-
     if (sec < 15) {
-      rafId = requestAnimationFrame(animate);
+      rafId = requestAnimationFrame(tick);
     } else {
-      /* Animation complete */
       replayBtn.classList.add('visible');
-      if (isLooping) {
-        setTimeout(() => startAnimation(), 800);
-      }
+      if (root.dataset.loop === 'true') setTimeout(startAnimation, 1000);
     }
   }
 
-  /* ── Start / reset ───────────────────────────────────────────── */
+  /* ══════════════════════════════════════════════
+     START / RESET
+  ════════════════════════════════════════════ */
   function startAnimation() {
     cancelAnimationFrame(rafId);
-    startTime = null;
-    waterDrops = [];
-    showerStreams = [];
-    rgbAngle = 0;
-    orbitAngle = 0;
+    startTs = null;
+    waterDrops = []; showerLines = []; splashParts = [];
+    ringRotation = 0; orbitY = 0; lastCSSDropTime = 0;
 
-    /* Reset styles */
-    stage.style.opacity = '0';
-    stage.style.transform = 'scale(0.88)';
-    productWrap.style.transform = 'scale(1) rotateY(0deg)';
-    productImg.style.filter = '';
-    rgbRing.style.opacity = '0';
-    productGlow.style.opacity = '0';
-    waterSurface.style.opacity = '0';
+    /* Hard reset DOM */
+    stage.style.cssText    = '';
+    if (stagePh) stagePh.style.cssText = '';
+    ring.style.opacity     = '0';
+    ring.style.filter      = 'blur(6px)';
+    face.style.opacity     = '0';
+    outerGlow.style.opacity= '0';
     copyMain.style.opacity = '0';
-    copyEnd.style.opacity = '0';
+    copyEnd.style.opacity  = '0';
+    if (ctaBtn) ctaBtn.style.pointerEvents = 'none';
+    tileBg.classList.remove('visible');
+    tileWet.style.opacity  = '0';
+    if (dropsEl) dropsEl.innerHTML = '';
+    if (speakerEl) speakerEl.style.transform = '';
+    if (photoWrap) photoWrap.style.transform = '';
+    if (photoImg) photoImg.style.filter = '';
+    if (speakerBody) speakerBody.style.filter = '';
     replayBtn.classList.remove('visible');
-
     bgCtx.clearRect(0, 0, W, H);
-    waterCtx.clearRect(0, 0, W, H);
+    fxCtx.clearRect(0, 0, W, H);
+    wCtx.clearRect(0, 0, W, H);
 
-    rafId = requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(tick);
   }
 
-  /* ── Intersection observer — start when visible ──────────────── */
+  /* ══════════════════════════════════════════════
+     INIT
+  ════════════════════════════════════════════ */
   function init() {
     resize();
-    window.addEventListener('resize', () => { resize(); }, { passive: true });
+    window.addEventListener('resize', resize, { passive: true });
 
-    /* Respect reduced-motion preference */
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      stage.style.opacity = '1';
-      stage.style.transform = 'none';
-      rgbRing.style.opacity = '0.65';
-      productGlow.style.opacity = '0.9';
-      copyMain.style.opacity = '1';
-      copyMain.style.bottom = '32%';
-      copyMain.style.transform = 'translateX(-50%)';
-      copyEnd.style.opacity = '1';
-      copyEnd.style.transform = 'translateX(-50%)';
-      replayBtn.classList.add('visible');
-      return;
-    }
+    /* Loop setting from schema */
+    {% if section.settings.autoplay_loop %}root.dataset.loop = 'true';{% endif %}
 
-    const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) {
-        startAnimation();
-        observer.disconnect();
-      }
-    }, { threshold: 0.2 });
-    observer.observe(section);
+    /* Respect reduced-motion */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    replayBtn.addEventListener('click', () => startAnimation());
+    /* Fire when scrolled into view */
+    const io = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) { startAnimation(); io.disconnect(); }
+    }, { threshold: 0.15 });
+    io.observe(root);
+
+    replayBtn.addEventListener('click', startAnimation);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', init)
+    : init();
 })();
 </script>
 
@@ -688,7 +998,7 @@
       "type": "image_picker",
       "id": "product_image",
       "label": "Product image",
-      "info": "Use a PNG with transparent background for best results. Recommended: 800×800px minimum."
+      "info": "PNG with transparent background recommended (800×800px+). When set, replaces the CSS speaker with your actual product photo."
     },
     {
       "type": "header",
@@ -698,7 +1008,7 @@
       "type": "image_picker",
       "id": "store_logo",
       "label": "Store logo",
-      "info": "White or light-coloured logo recommended. Will be shown in the end card."
+      "info": "White / light-coloured logo. Shown in the end card."
     },
     {
       "type": "header",
@@ -734,9 +1044,8 @@
     {
       "type": "checkbox",
       "id": "autoplay_loop",
-      "label": "Loop animation",
-      "default": false,
-      "info": "Automatically replay the animation after it completes."
+      "label": "Loop animation automatically",
+      "default": false
     }
   ],
   "presets": [
