@@ -1,0 +1,748 @@
+{% comment %}
+  Hero Cinematic Intro — SplashySound
+  Premium 15-second animated hero banner for Shopify homepage.
+  Sequence: RGB glow → macro product → water drops → shower slow-mo → studio rotation → CTA
+{% endcomment %}
+
+<section
+  id="hero-cinematic"
+  class="hero-cinematic"
+  data-product-image="{{ section.settings.product_image | img_url: '1200x' }}"
+  data-logo="{{ section.settings.store_logo | img_url: '400x' }}"
+>
+  <!-- Canvas layers -->
+  <canvas id="hero-bg-canvas" class="hero-canvas hero-canvas--bg" aria-hidden="true"></canvas>
+  <canvas id="hero-water-canvas" class="hero-canvas hero-canvas--water" aria-hidden="true"></canvas>
+
+  <!-- Product stage -->
+  <div class="hero-stage" id="hero-stage" aria-hidden="true">
+    <div class="hero-product-wrap" id="hero-product-wrap">
+      <div class="hero-rgb-ring" id="hero-rgb-ring"></div>
+      <div class="hero-product-glow" id="hero-product-glow"></div>
+      {% if section.settings.product_image %}
+        <img
+          src="{{ section.settings.product_image | img_url: '800x' }}"
+          alt="{{ section.settings.product_image.alt | default: 'Speaker product' }}"
+          class="hero-product-img"
+          id="hero-product-img"
+          draggable="false"
+        >
+      {% else %}
+        <div class="hero-product-placeholder" id="hero-product-img">
+          <span>Add product image<br>in section settings</span>
+        </div>
+      {% endif %}
+      <div class="hero-water-surface" id="hero-water-surface"></div>
+    </div>
+  </div>
+
+  <!-- Text overlays -->
+  <div class="hero-copy" id="hero-copy-main" aria-label="{{ section.settings.headline }}">
+    <p class="hero-tagline" id="hero-tagline">{{ section.settings.headline | default: 'Transform Your Shower Experience' }}</p>
+  </div>
+  <div class="hero-copy hero-copy--end" id="hero-copy-end">
+    <div class="hero-logo-wrap" id="hero-logo-wrap">
+      {% if section.settings.store_logo %}
+        <img src="{{ section.settings.store_logo | img_url: '300x' }}" alt="{{ shop.name }}" class="hero-logo-img">
+      {% else %}
+        <span class="hero-logo-text">{{ shop.name }}</span>
+      {% endif %}
+    </div>
+    <p class="hero-sub-tagline" id="hero-sub-tagline">{{ section.settings.sub_headline | default: 'Premium Sound. Anywhere.' }}</p>
+    {% if section.settings.cta_text != blank %}
+      <a href="{{ section.settings.cta_link | default: '/collections/all' }}" class="hero-cta-btn" id="hero-cta-btn">
+        {{ section.settings.cta_text }}
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Vignette overlay -->
+  <div class="hero-vignette" aria-hidden="true"></div>
+
+  <!-- Replay button (accessible) -->
+  <button class="hero-replay-btn" id="hero-replay-btn" aria-label="Replay animation" title="Replay">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+  </button>
+</section>
+
+<style>
+/* ─────────────────────────────────────────────
+   HERO CINEMATIC — Base layout
+───────────────────────────────────────────── */
+.hero-cinematic {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 560px;
+  max-height: 1080px;
+  background: #000;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --rgb-a: #ff0055;
+  --rgb-b: #00e5ff;
+  --rgb-c: #a259ff;
+  --rgb-d: #00ff88;
+  --anim-speed: 1; /* multiplier — overridden by JS */
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hero-canvas--bg  { z-index: 1; }
+.hero-canvas--water { z-index: 4; }
+
+/* ─────────────────────────────────────────────
+   STAGE & PRODUCT
+───────────────────────────────────────────── */
+.hero-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.88);
+  transition: none;
+}
+
+.hero-product-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(260px, 36vw, 520px);
+  aspect-ratio: 1;
+}
+
+.hero-product-img {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 60px rgba(0,229,255,0.25));
+  transform-origin: center;
+  will-change: transform, filter;
+}
+
+.hero-product-placeholder {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* RGB ring */
+.hero-rgb-ring {
+  position: absolute;
+  inset: -12%;
+  z-index: 2;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--rgb-a),
+    var(--rgb-c),
+    var(--rgb-b),
+    var(--rgb-d),
+    var(--rgb-a)
+  );
+  filter: blur(28px);
+  opacity: 0;
+  animation: none;
+  will-change: opacity, transform;
+}
+
+/* Product glow halo */
+.hero-product-glow {
+  position: absolute;
+  inset: -20%;
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(0,229,255,0.35) 0%,
+    rgba(162,89,255,0.18) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* Water surface reflection */
+.hero-water-surface {
+  position: absolute;
+  bottom: -5%;
+  left: 5%;
+  right: 5%;
+  height: 30%;
+  z-index: 4;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,229,255,0.08),
+    transparent
+  );
+  filter: blur(2px);
+  opacity: 0;
+  transform: scaleY(-1) translateY(0);
+  border-radius: 50%;
+}
+
+/* ─────────────────────────────────────────────
+   TEXT COPY
+───────────────────────────────────────────── */
+.hero-copy {
+  position: absolute;
+  z-index: 10;
+  text-align: center;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.hero-tagline {
+  font-size: clamp(28px, 4.5vw, 72px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 0 60px rgba(0,229,255,0.5), 0 2px 40px rgba(0,0,0,0.8);
+  background: linear-gradient(135deg, #fff 40%, rgba(0,229,255,0.85) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-copy--end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  bottom: 12%;
+}
+
+.hero-logo-wrap { display: flex; align-items: center; justify-content: center; }
+.hero-logo-img  { height: 44px; width: auto; filter: brightness(0) invert(1); }
+.hero-logo-text {
+  font-size: clamp(22px, 3vw, 42px);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.hero-sub-tagline {
+  font-size: clamp(14px, 1.8vw, 22px);
+  font-weight: 400;
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-cta-btn {
+  display: inline-block;
+  padding: 14px 36px;
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 40px;
+  pointer-events: all;
+  transition: background 0.3s, border-color 0.3s, transform 0.2s;
+  backdrop-filter: blur(8px);
+}
+.hero-cta-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(0,229,255,0.8);
+  transform: scale(1.04);
+}
+
+/* ─────────────────────────────────────────────
+   VIGNETTE & REPLAY
+───────────────────────────────────────────── */
+.hero-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%);
+  pointer-events: none;
+}
+
+.hero-replay-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 20;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.4s, background 0.2s, color 0.2s;
+  backdrop-filter: blur(6px);
+}
+.hero-replay-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.hero-replay-btn.visible { opacity: 1; }
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-cinematic { height: 100svh; min-height: 480px; }
+  .hero-product-wrap { width: clamp(200px, 60vw, 340px); }
+  .hero-copy--end { bottom: 8%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage { opacity: 1 !important; transform: none !important; }
+  .hero-rgb-ring { opacity: 0.6 !important; }
+  #hero-copy-main { opacity: 1 !important; transform: translateX(-50%) !important; }
+  #hero-copy-end  { opacity: 1 !important; }
+  .hero-replay-btn { opacity: 1 !important; }
+}
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Utilities ─────────────────────────────────────────────── */
+  const lerp  = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const ease  = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;   // easeInOut
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+  /* ── DOM references ─────────────────────────────────────────── */
+  const section     = document.getElementById('hero-cinematic');
+  const bgCanvas    = document.getElementById('hero-bg-canvas');
+  const waterCanvas = document.getElementById('hero-water-canvas');
+  const stage       = document.getElementById('hero-stage');
+  const productWrap = document.getElementById('hero-product-wrap');
+  const productImg  = document.getElementById('hero-product-img');
+  const rgbRing     = document.getElementById('hero-rgb-ring');
+  const productGlow = document.getElementById('hero-product-glow');
+  const waterSurface= document.getElementById('hero-water-surface');
+  const copyMain    = document.getElementById('hero-copy-main');
+  const copyEnd     = document.getElementById('hero-copy-end');
+  const replayBtn   = document.getElementById('hero-replay-btn');
+
+  /* ── Canvas contexts ────────────────────────────────────────── */
+  const bgCtx    = bgCanvas.getContext('2d');
+  const waterCtx = waterCanvas.getContext('2d');
+
+  /* ── State ──────────────────────────────────────────────────── */
+  let W = 0, H = 0;
+  let startTime = null;
+  let rafId = null;
+  let waterDrops = [];
+  let showerStreams = [];
+  let rgbAngle = 0;
+  let orbitAngle = 0;
+  let isLooping = false;
+
+  /* ── Resize ─────────────────────────────────────────────────── */
+  function resize() {
+    W = section.offsetWidth;
+    H = section.offsetHeight;
+    [bgCanvas, waterCanvas].forEach(c => {
+      c.width  = W;
+      c.height = H;
+    });
+  }
+
+  /* ── Particles: ambient background particles ─────────────────── */
+  const PARTICLES = Array.from({ length: 80 }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: Math.random() * 1.8 + 0.4,
+    speed: Math.random() * 0.00012 + 0.00004,
+    hue: Math.random() * 360,
+    opacity: Math.random() * 0.6 + 0.1,
+  }));
+
+  function drawBackground(t) {
+    bgCtx.clearRect(0, 0, W, H);
+
+    /* Gradient backdrop */
+    const grd = bgCtx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
+    grd.addColorStop(0,   `rgba(8, 10, 22, ${clamp(t * 0.8, 0, 1)})`);
+    grd.addColorStop(0.5, `rgba(4, 6, 16,  ${clamp(t * 0.9, 0, 1)})`);
+    grd.addColorStop(1,   'rgba(0, 0, 0, 1)');
+    bgCtx.fillStyle = grd;
+    bgCtx.fillRect(0, 0, W, H);
+
+    /* Floating micro-particles */
+    if (t > 0.3) {
+      const pOpacity = clamp((t - 0.3) / 0.4, 0, 1);
+      PARTICLES.forEach(p => {
+        p.y -= p.speed;
+        if (p.y < 0) { p.y = 1; p.x = Math.random(); }
+        bgCtx.beginPath();
+        bgCtx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
+        bgCtx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.opacity * pOpacity})`;
+        bgCtx.fill();
+      });
+    }
+  }
+
+  /* ── RGB ring glow ────────────────────────────────────────────── */
+  function updateRGBRing(t, sec) {
+    /* Phase: 0-2s = dark, 2-5s = ring fade in, 5+ = sustained */
+    const phase1 = clamp((sec - 2) / 1.5, 0, 1); // fade in
+    const phase2 = clamp((sec - 12) / 1.5, 0, 1); // fade for finale
+    const opacity = easeOut(phase1) * (1 - phase2 * 0.3);
+    rgbRing.style.opacity = opacity;
+    rgbRing.style.transform = `rotate(${rgbAngle}deg) scale(${1 + Math.sin(sec * 0.8) * 0.03})`;
+    rgbAngle += 0.18;
+
+    productGlow.style.opacity = easeOut(phase1) * 0.9;
+  }
+
+  /* ── Water droplets ─────────────────────────────────────────── */
+  function spawnDrop(sec) {
+    const cx = W / 2, cy = H / 2;
+    const spread = Math.min(W, H) * 0.22;
+    const x = cx + (Math.random() - 0.5) * spread * 2;
+    const y = cy + (Math.random() - 0.5) * spread * 1.4;
+    waterDrops.push({
+      x, y,
+      r: Math.random() * 6 + 3,
+      opacity: 0,
+      maxOpacity: Math.random() * 0.85 + 0.15,
+      life: 0,
+      maxLife: Math.random() * 90 + 60,
+      hue: Math.random() < 0.4 ? 195 : (Math.random() < 0.5 ? 280 : 340),
+    });
+  }
+
+  function drawDroplets(sec) {
+    waterCtx.clearRect(0, 0, W, H);
+
+    /* Phase 5-8: drops appear */
+    const dropPhase = clamp((sec - 5) / 2, 0, 1);
+    if (dropPhase > 0 && Math.random() < dropPhase * 0.35) spawnDrop(sec);
+
+    /* Phase 8-12: shower — extra drops */
+    if (sec > 8 && Math.random() < 0.6) spawnDrop(sec);
+
+    waterDrops = waterDrops.filter(d => d.life < d.maxLife);
+    waterDrops.forEach(d => {
+      d.life++;
+      const lt = d.life / d.maxLife;
+      d.opacity = lt < 0.15 ? lt / 0.15 : lt > 0.75 ? (1 - lt) / 0.25 : 1;
+      d.opacity *= d.maxOpacity;
+
+      /* Drop body */
+      const grd = waterCtx.createRadialGradient(d.x - d.r * 0.25, d.y - d.r * 0.25, 0, d.x, d.y, d.r);
+      grd.addColorStop(0, `hsla(${d.hue}, 100%, 90%, ${d.opacity * 0.9})`);
+      grd.addColorStop(0.4, `hsla(${d.hue}, 80%, 60%, ${d.opacity * 0.7})`);
+      grd.addColorStop(1,   `hsla(${d.hue}, 60%, 30%, ${d.opacity * 0.1})`);
+
+      waterCtx.beginPath();
+      waterCtx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      waterCtx.fillStyle = grd;
+      waterCtx.fill();
+
+      /* Specular highlight */
+      waterCtx.beginPath();
+      waterCtx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.28, 0, Math.PI * 2);
+      waterCtx.fillStyle = `rgba(255,255,255,${d.opacity * 0.75})`;
+      waterCtx.fill();
+    });
+
+    /* Shower streams (phase 8-12) */
+    drawShower(sec);
+  }
+
+  function drawShower(sec) {
+    const showerPhase = clamp((sec - 8) / 1.5, 0, 1);
+    const showerEnd   = clamp((sec - 12) / 1.0, 0, 1);
+    const alpha = easeOut(showerPhase) * (1 - showerEnd);
+    if (alpha <= 0) return;
+
+    /* Initialise streams once */
+    if (showerStreams.length === 0) {
+      for (let i = 0; i < 22; i++) {
+        showerStreams.push({
+          x: W * (0.3 + Math.random() * 0.4),
+          vy: Math.random() * 4 + 6,
+          len: Math.random() * 60 + 30,
+          opacity: Math.random() * 0.6 + 0.2,
+          hue: Math.random() < 0.4 ? 195 : 280,
+          offset: Math.random() * H,
+        });
+      }
+    }
+
+    showerStreams.forEach(s => {
+      s.offset = (s.offset + s.vy) % (H * 1.5);
+      const sy = s.offset - H * 0.25;
+
+      const grd = waterCtx.createLinearGradient(s.x, sy, s.x, sy + s.len);
+      grd.addColorStop(0,   `hsla(${s.hue}, 80%, 80%, 0)`);
+      grd.addColorStop(0.3, `hsla(${s.hue}, 80%, 80%, ${s.opacity * alpha})`);
+      grd.addColorStop(1,   `hsla(${s.hue}, 70%, 60%, 0)`);
+
+      waterCtx.beginPath();
+      waterCtx.moveTo(s.x, sy);
+      waterCtx.lineTo(s.x, sy + s.len);
+      waterCtx.strokeStyle = grd;
+      waterCtx.lineWidth = Math.random() * 1.5 + 0.5;
+      waterCtx.stroke();
+    });
+  }
+
+  /* ── Stage & product animations ──────────────────────────────── */
+  function updateStage(sec) {
+    /* Fade in stage at 2s */
+    const fadeIn  = clamp((sec - 2) / 2, 0, 1);
+    stage.style.opacity   = easeOut(fadeIn);
+    stage.style.transform = `scale(${lerp(0.88, 1, easeOut(fadeIn))})`;
+
+    /* Macro zoom: 2-5s → zoom in closer */
+    const macroZoom = clamp((sec - 2) / 3, 0, 1);
+    const scale = lerp(1, 1.18, ease(macroZoom));
+
+    /* Orbital rotation: 8-12s */
+    if (sec > 8 && sec < 12) {
+      const orbitT = clamp((sec - 8) / 4, 0, 1);
+      orbitAngle = lerp(0, 180, ease(orbitT));
+      productWrap.style.transform = `scale(${scale}) rotateY(${orbitAngle}deg)`;
+    } else if (sec >= 12) {
+      /* Studio rotation: 12-14s */
+      const rotT = clamp((sec - 12) / 2, 0, 1);
+      const slowRot = lerp(180, 210, ease(rotT));
+      const studioScale = lerp(scale, 1.05, ease(rotT));
+      productWrap.style.transform = `scale(${studioScale}) rotateY(${slowRot}deg)`;
+
+      /* Premium studio lighting glow */
+      const studioGlow = clamp((sec - 12) / 1, 0, 1);
+      productImg.style.filter = `drop-shadow(0 0 ${lerp(60, 120, studioGlow)}px rgba(0,229,255,${lerp(0.25, 0.6, studioGlow)})) drop-shadow(0 0 ${lerp(20, 60, studioGlow)}px rgba(162,89,255,${lerp(0.1, 0.35, studioGlow)}))`;
+    } else {
+      productWrap.style.transform = `scale(${scale}) rotateY(0deg)`;
+    }
+
+    /* Water surface reflection */
+    const waterReflect = clamp((sec - 5) / 2, 0, 1) * (1 - clamp((sec - 12) / 1, 0, 1));
+    waterSurface.style.opacity = easeOut(waterReflect) * 0.7;
+  }
+
+  /* ── Text overlays ───────────────────────────────────────────── */
+  function updateCopy(sec) {
+    /* Main headline: 12-14s */
+    const headIn  = clamp((sec - 12) / 0.8, 0, 1);
+    const headOut = clamp((sec - 14) / 0.4, 0, 1);
+    const headOp  = easeOut(headIn) * (1 - headOut);
+    copyMain.style.opacity   = headOp;
+    copyMain.style.transform = `translateX(-50%) translateY(${lerp(20, 0, easeOut(headIn))}px)`;
+    copyMain.style.bottom    = '32%';
+
+    /* End card: 14-15s */
+    const endIn = clamp((sec - 14) / 0.6, 0, 1);
+    copyEnd.style.opacity   = easeOut(endIn);
+    copyEnd.style.transform = `translateX(-50%) translateY(${lerp(12, 0, easeOut(endIn))}px)`;
+
+    /* Show CTA button when end card visible */
+    const ctaBtn = document.getElementById('hero-cta-btn');
+    if (ctaBtn) {
+      ctaBtn.style.pointerEvents = endIn > 0.8 ? 'all' : 'none';
+    }
+  }
+
+  /* ── Main animation loop ─────────────────────────────────────── */
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const elapsed = (ts - startTime) / 1000; // seconds
+    const sec     = Math.min(elapsed, 15);
+    const t       = sec / 15; // 0→1
+
+    drawBackground(t);
+    updateRGBRing(t, sec);
+    drawDroplets(sec);
+    updateStage(sec);
+    updateCopy(sec);
+
+    /* Loop-ready fade at 15s */
+    if (sec >= 14.8) {
+      const fadeOut = clamp((sec - 14.8) / 0.2, 0, 1);
+      section.style.setProperty('--loop-fade', fadeOut);
+    }
+
+    if (sec < 15) {
+      rafId = requestAnimationFrame(animate);
+    } else {
+      /* Animation complete */
+      replayBtn.classList.add('visible');
+      if (isLooping) {
+        setTimeout(() => startAnimation(), 800);
+      }
+    }
+  }
+
+  /* ── Start / reset ───────────────────────────────────────────── */
+  function startAnimation() {
+    cancelAnimationFrame(rafId);
+    startTime = null;
+    waterDrops = [];
+    showerStreams = [];
+    rgbAngle = 0;
+    orbitAngle = 0;
+
+    /* Reset styles */
+    stage.style.opacity = '0';
+    stage.style.transform = 'scale(0.88)';
+    productWrap.style.transform = 'scale(1) rotateY(0deg)';
+    productImg.style.filter = '';
+    rgbRing.style.opacity = '0';
+    productGlow.style.opacity = '0';
+    waterSurface.style.opacity = '0';
+    copyMain.style.opacity = '0';
+    copyEnd.style.opacity = '0';
+    replayBtn.classList.remove('visible');
+
+    bgCtx.clearRect(0, 0, W, H);
+    waterCtx.clearRect(0, 0, W, H);
+
+    rafId = requestAnimationFrame(animate);
+  }
+
+  /* ── Intersection observer — start when visible ──────────────── */
+  function init() {
+    resize();
+    window.addEventListener('resize', () => { resize(); }, { passive: true });
+
+    /* Respect reduced-motion preference */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      stage.style.opacity = '1';
+      stage.style.transform = 'none';
+      rgbRing.style.opacity = '0.65';
+      productGlow.style.opacity = '0.9';
+      copyMain.style.opacity = '1';
+      copyMain.style.bottom = '32%';
+      copyMain.style.transform = 'translateX(-50%)';
+      copyEnd.style.opacity = '1';
+      copyEnd.style.transform = 'translateX(-50%)';
+      replayBtn.classList.add('visible');
+      return;
+    }
+
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        startAnimation();
+        observer.disconnect();
+      }
+    }, { threshold: 0.2 });
+    observer.observe(section);
+
+    replayBtn.addEventListener('click', () => startAnimation());
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Hero Cinematic Intro",
+  "tag": "section",
+  "class": "hero-section",
+  "limit": 1,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Product"
+    },
+    {
+      "type": "image_picker",
+      "id": "product_image",
+      "label": "Product image",
+      "info": "Use a PNG with transparent background for best results. Recommended: 800×800px minimum."
+    },
+    {
+      "type": "header",
+      "content": "Branding"
+    },
+    {
+      "type": "image_picker",
+      "id": "store_logo",
+      "label": "Store logo",
+      "info": "White or light-coloured logo recommended. Will be shown in the end card."
+    },
+    {
+      "type": "header",
+      "content": "Copy"
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Main headline",
+      "default": "Transform Your Shower Experience"
+    },
+    {
+      "type": "text",
+      "id": "sub_headline",
+      "label": "Sub-headline",
+      "default": "Premium Sound. Anywhere."
+    },
+    {
+      "type": "text",
+      "id": "cta_text",
+      "label": "CTA button text",
+      "default": "Shop Now"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "CTA button link"
+    },
+    {
+      "type": "header",
+      "content": "Behaviour"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay_loop",
+      "label": "Loop animation",
+      "default": false,
+      "info": "Automatically replay the animation after it completes."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Cinematic Intro"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,14 @@
+/*
+  hero-cinematic.css
+  Supplemental styles loaded via theme.liquid if needed.
+  All critical styles are inlined in the section for zero-flash rendering.
+*/
+
+/* Custom property overrides per-theme */
+:root {
+  --hero-rgb-a: #ff0055;
+  --hero-rgb-b: #00e5ff;
+  --hero-rgb-c: #a259ff;
+  --hero-rgb-d: #00ff88;
+  --hero-font: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+}
